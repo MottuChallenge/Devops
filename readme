@@ -75,6 +75,7 @@ sudo usermod -aG docker $USER
 
 newgrp docker
 
+7 - rodar o projeto
 docker run --name mottu -d -p 8080:80 pedrohenrique32/mottu-grid-dotnet
  
 
