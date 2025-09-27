@@ -5,7 +5,7 @@ properties:
   containers:
     - name: api
       properties:
-        image: <Seu ACR>.azurecr.io/mottu-grid:7.0
+        image: <Seu ACR>.azurecr.io/mottu-grid:1.0
         resources:
           requests:
             cpu: 1
