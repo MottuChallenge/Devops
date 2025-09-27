@@ -319,6 +319,19 @@ MottuGrid/
 
 > **Importante:** Este comando deve ser executado APÓS o MySQL estar rodando e acessível. Sem ele, a API retornará erros de banco de dados!
 
+
+### Url para entrar na api
+
+- rode o comando
+  ```bash
+    az container show --name api-aci --resource-group MottuGrid
+  ```
+- Pegue o IP do api-aci
+- Coloque no navegado a url
+```
+# http://<ip-do-api-aci>:8080/swagger/index.html
+```
+
 ### Exemplos de Testes
 
 **POST /api/yards**
