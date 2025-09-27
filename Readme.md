@@ -68,6 +68,13 @@ Este guia explica como configurar e implantar a aplicação MottuGrid no Azure u
 
 ## 🏗️ Configuração do Azure Container Registry (ACR)
 
+### Puxar o projeto para a maquina
+```bash
+git clone https://github.com/MottuChallenge/Devops.git
+cd /Devops
+```
+
+
 ### 1. Criar Resource Group
 ```bash
 az group create --name MottuGrid --location eastus
