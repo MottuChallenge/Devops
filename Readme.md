@@ -1,3 +1,57 @@
+## 👥 INTEGRANTES DO GRUPO
+
+- RM559064 - Pedro Henrique dos Santos
+- RM556182 - Vinícius de Oliveira Coutinho
+- RM557992 - Thiago Thomaz Sales Conceição
+
+---
+
+## 🎯 PROBLEMA A SER RESOLVIDO
+
+A Mottu enfrenta dificuldades para localizar e gerenciar com precisão as motos estacionadas em seus pátios. O processo atual é manual, sujeito a erros e impacta negativamente a eficiência operacional e o controle de ativos.
+
+---
+
+# 🏍️ Mottu Challenge - Gestão de Pátio e Setores
+
+Este projeto implementa um sistema de **gestão de pátio (Yard)**, **setores (Sector)** e **vagas (Spots)** para organização e alocação de motos.  
+O objetivo é permitir que filiais da Mottu consigam estruturar seus pátios em setores e, automaticamente, gerar as vagas disponíveis para as motos.
+
+Desenvolveremos uma API RESTful para registrar, atualizar e consultar a localização das motos em tempo real nos pátios da Mottu. O sistema permitirá:
+
+- Cadastro e atualização de motos, pátios, seções e filiais.
+- Consulta rápida da localização de cada moto.
+- Integração com cameras e IA para verificar se um setor esta cheio e com base nisso aconselhar a criar outros setores ou mudar de patio as motos que chegaram com esse modelo especifico, tambem para localizar uma moto especifica
+- Facilidade de integração com outros sistemas internos da Mottu.
+- Tera um sistema alerta onde quando uma moto estiver perto de sua revisão avisara a um prestador de serviço da mottu para adicionar essa moto a um setor de revisão
+
+Essa solução trará mais agilidade, precisão e controle para a operação, reduzindo erros e otimizando o uso dos recursos.
+
+---
+
+## 📌 Domínio
+
+- **Yard (Pátio)**  
+  Representa um espaço físico de uma filial, que pode conter múltiplos setores.  
+  Cada pátio possui dimensões e restrições de coordenadas.
+
+- **Sector (Setor)**  
+  Representa uma área dentro de um pátio.  
+  É definido por pontos (polígono), e a partir dele são geradas vagas (spots).  
+  O sistema valida se o setor:
+  - Está contido dentro do pátio.  
+  - Não se sobrepõe a outros setores do mesmo pátio.  
+
+- **Spot (Vaga)**  
+  Representa uma vaga de moto dentro de um setor.  
+  Por padrão, cada vaga ocupa um espaço de **2m x 2m**.
+  Exemplo: um setor de 10m x 10m comporta 25 vagas.
+  
+- **Motorcycle (Motocicleta)**
+  A motocicleta é a principal entidade do negócio, pois é o objeto que precisa ser cadastrado, alocado e movimentado dentro dos setores e pátios. Todas as operações de gestão convergem para ela.
+
+---
+
 # 🚀 Guia de Configuração da Infraestrutura Azure
 
 Este guia explica como configurar e implantar a aplicação MottuGrid no Azure usando Azure Container Registry (ACR) e Azure Container Instances (ACI).
@@ -175,4 +229,35 @@ az container list --resource-group MottuGrid --output table
 
 # Obter credenciais do ACR
 az acr credential show --name <Nome ACR>
+```
+--------
+
+## Testes
+
+POST /api/yards
+Content-Type: application/json
+
+```json
+{
+  "name": "Pátio Central",
+  "cep": "01311300",
+  "number": "100",
+  "points": [
+    { "pointOrder": 1, "x": 0, "y": 0 },
+    { "pointOrder": 2, "x": 0, "y": 50 },
+    { "pointOrder": 3, "x": 50, "y": 50 },
+    { "pointOrder": 4, "x": 50, "y": 0 }
+  ]
+}
+
+```
+Aqui ele usa a api do via cep para buscar o endereço da pessoa
+
+PUT /api/yards/{id}
+Content-Type: application/json
+
+```json
+{
+  "name": "Pátio Central Renovado"
+}
 ```
