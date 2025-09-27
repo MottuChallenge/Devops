@@ -1,81 +1,178 @@
-#🚀 Azure Infrastructure Setup & Docker Installation on Linux VM
+# 🚀 Guia de Configuração da Infraestrutura Azure
 
-This guide explains how to provision a Linux virtual machine on Azure, install Docker, and run a containerized application.
+Este guia explica como configurar e implantar a aplicação MottuGrid no Azure usando Azure Container Registry (ACR) e Azure Container Instances (ACI).
 
 ---
 
-## 📦 Variables
+## 📋 Índice
+1. [Configuração do Azure Container Registry (ACR)](#configuração-do-azure-container-registry-acr)
+2. [Configuração do Banco de Dados com ACI](#configuração-do-banco-de-dados-com-aci)
+3. [Implantação da API com ACI](#implantação-da-api-com-aci)
+4. [Configuração de VM (Alternativa)](#configuração-de-vm-alternativa)
 
+---
+
+## 🏗️ Configuração do Azure Container Registry (ACR)
+
+### 1. Criar Resource Group
 ```bash
-RESOURCE_GROUP=rg-vm-challenge
-LOCATION=eastus
-VM_NAME=vm-challenge
-IMAGE=Canonical:ubuntu-24_04-lts:minimal:24.04.202505020
-SIZE=Standard_B2s
-USERNAME=admin_fiap
-PASSWORD='admin_fiap@123'
+az group create --name MottuGrid --location eastus
+```
 
-1 - az group create -l localization -n name-goup
- 
-2 - az vm create --resource-group name-goup --name name-machine --image image-choise --size size --admin-username username --admin-password password
- 
-3 - Instalação do Docker na máquina Linux
+### 2. Criar Azure Container Registry
+```bash
+az acr create \
+    --resource-group MottuGrid \
+    --name <Nome ACR> \
+    --sku Basic \
+    --admin-enabled true
+```
+> **Nota:** Substitua `<Nome ACR>` por um nome único para seu Container Registry
 
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+### 3. Fazer Login no ACR
+```bash
+az acr login --name <Nome ACR>
+```
 
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+### 4. Construir Imagens Localmente
+```bash
+docker-compose up -d
+docker images
+```
 
-sudo apt-get update
+### 5. Marcar e Enviar Imagem MySQL
+```bash
+# Marcar imagem MySQL
+docker tag mysql:8.0 <Nome ACR>.azurecr.io/mysql:8.0
 
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# Enviar para ACR
+docker push <Nome ACR>.azurecr.io/mysql:8.0
+```
 
-5 - az network nsg rule create --resource-group name-goup --nsg-name vm-challengeNSG --name port_8080 --protocol tcp --priority 1010 --destination-port-range 8080
+### 6. Marcar e Enviar Imagem da API
+```bash
+# Marcar imagem da API
+docker tag mottu-grid:1.0 <Nome ACR>.azurecr.io/mottu-grid:1.0
 
-6 - az network nsg rule create --resource-group name-goup --nsg-name vm-challengeNSG --name port_80 --protocol tcp --priority 1020 --destination-port-range 80
+# Enviar para ACR
+docker push <Nome ACR>.azurecr.io/mottu-grid:1.0
+```
 
-===============================================================================================================================================================================================================
+---
 
-# How it will look
+## 🗄️ Configuração do Banco de Dados com ACI
 
+### 1. Configurar o arquivo aci-mysql.yaml
+Antes de implantar, você deve configurar o arquivo `aci-mysql.yaml` com os dados do seu ACR:
 
+```yaml
+# No arquivo aci-mysql.yaml, substitua:
+image: <Seu ACR>.azurecr.io/mysql:8.0
+server: <Seu ACR>.azurecr.io
+username: <Seu User>
+password: <Sua Senha>
+```
 
-1 - az group create -l eastus -n rg-vm-challenge
- 
-2 - az vm create --resource-group rg-vm-challenge --name vm-challenge --image Canonical:ubuntu-24_04-lts:minimal:24.04.202505020 --size Standard_B2s --admin-username admin_fiap --admin-password admin_fiap@123
+> **Importante:** Para obter as credenciais do ACR, use:
+```bash
+az acr credential show --name <Nome ACR>
+```
 
-4 - az network nsg rule create --resource-group rg-vm-challenge --nsg-name vm-challengeNSG --name port_8080 --protocol tcp --priority 1010 --destination-port-range 8080
- 
-5 - az network nsg rule create --resource-group rg-vm-challenge --nsg-name vm-challengeNSG --name port_80 --protocol tcp --priority 1020 --destination-port-range 80
- 
-6 - Instalação do Docker na máquina Linux
+### 2. Implantar Container MySQL
+```bash
+az container create --resource-group MottuGrid --file aci-mysql.yaml
+```
 
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
+### 3. Obter IP Público do MySQL
+```bash
+az container show --name mysql-aci --resource-group MottuGrid
+```
+Procure pelo endereço IP na resposta:
+```json
+"ipAddress": {
+    "ip": "SEU-IP-PUBLICO-MYSQL"
+}
+```
 
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+### 4. Conectar ao MySQL (Teste Opcional)
+```bash
+mysql -h <IP-DO-BANCO> -P 3306 -u user_test -p
+```
 
-sudo apt-get update
+---
 
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+## 🚀 Implantação da API com ACI
 
-sudo usermod -aG docker $USER
+### 1. Configurar o arquivo aci-api.yaml
+Antes de implantar a API, você deve configurar o arquivo `aci-api.yaml` com:
 
-newgrp docker
+**a) Dados do ACR:**
+```yaml
+# No arquivo aci-api.yaml, substitua:
+image: <Seu ACR>.azurecr.io/mottu-grid:1.0
+server: <Seu ACR>.azurecr.io
+username: <Seu User>
+password: <Sua Senha>
+```
 
-7 - rodar o projeto
-docker run --name mottu -d -p 8080:80 pedrohenrique32/mottu-grid-dotnet
- 
+**b) String de Conexão com IP do MySQL:**
+```yaml
+# Atualize a variável de ambiente DB_CONNECTION com o IP público do MySQL:
+value: server=<IP-DO-BANCO>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
+```
 
+> **Dica:** Use o IP obtido na etapa anterior da configuração do MySQL
+
+### 2. Implantar Container da API
+```bash
+az container create --resource-group MottuGrid --file aci-api.yaml
+```
+
+---
+
+## 📝 Notas Importantes
+
+- **Nome do ACR:** Deve ser globalmente único no Azure
+- **IP do MySQL:** Salve o IP público do container MySQL para configuração da API
+- **String de Conexão:** Atualize a string de conexão da API com o IP do MySQL antes da implantação
+- **Resource Group:** Todos os recursos são criados no resource group `MottuGrid`
+- **Configuração dos YAMLs:** É essencial configurar os arquivos `aci-mysql.yaml` e `aci-api.yaml` com os dados corretos do ACR antes da implantação
+
+---
+
+## ⚙️ Configuração dos Arquivos YAML
+
+### Dados necessários do ACR:
+1. **Nome do ACR:** `<Seu ACR>.azurecr.io`
+2. **Username:** Obtido com `az acr credential show --name <Nome ACR>`
+3. **Password:** Obtido com `az acr credential show --name <Nome ACR>`
+
+### Locais para configurar nos YAMLs:
+- **aci-mysql.yaml:** Seção `image` e `imageRegistryCredentials`
+- **aci-api.yaml:** Seção `image`, `imageRegistryCredentials` e variável `DB_CONNECTION`
+
+---
+
+## 🔧 Solução de Problemas
+
+### Problemas Comuns
+- **Falha no Login do ACR:** Verifique se você tem as permissões adequadas e se o nome do ACR está correto
+- **Falha na Criação do Container:** Verifique se os arquivos YAML existem e estão configurados corretamente
+- **Problemas de Conexão com o Banco:** Verifique se o container MySQL está executando e se o IP está configurado corretamente na API
+
+### Comandos Úteis
+```bash
+# Verificar status dos containers
+az container show --name mysql-aci --resource-group MottuGrid
+az container show --name api-aci --resource-group MottuGrid
+
+# Visualizar logs dos containers
+az container logs --name mysql-aci --resource-group MottuGrid
+az container logs --name api-aci --resource-group MottuGrid
+
+# Listar todos os containers no resource group
+az container list --resource-group MottuGrid --output table
+
+# Obter credenciais do ACR
+az acr credential show --name <Nome ACR>
+```
