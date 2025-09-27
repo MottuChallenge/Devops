@@ -6,9 +6,35 @@
 
 ---
 
-## 🎯 PROBLEMA A SER RESOLVIDO
+## 🎯 PROBLEMA A SER RESOLVID#### **Opção 2: Executar dentro do Container da API**
+```bash
+# ⚠️ PROBLEMA: Containers de produção normalmente não têm as ferramentas EF CLI instaladas
+# SOLUÇÃO: Instalar as ferramentas dentro do container
 
-A Mottu enfrenta dificuldades para localizar e gerenciar com precisão as motos estacionadas em seus pátios. O processo atual é manual, sujeito a erros e impacta negativamente a eficiência operacional e o controle de ativos.
+# Acesse o container da API em execução
+az container exec --resource-group MottuGrid --name api-aci --exec-command "/bin/bash"
+
+# Dentro do container, instale as ferramentas EF:
+dotnet tool install --global dotnet-ef
+export PATH="$PATH:/root/.dotnet/tools"
+
+# Depois execute:
+cd /app
+dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
+```
+
+#### **Opção 2B: Via API Endpoint (Recomendado para produção)**
+```bash
+# Se sua API implementa um endpoint para migrations (prática recomendada)
+# Obtenha o IP público da API:
+az container show --name api-aci --resource-group MottuGrid
+
+# Faça uma requisição POST para aplicar migrations:
+curl -X POST http://<IP-DA-API>:8080/api/database/migrate
+
+# OU acesse via Swagger UI:
+# http://<IP-DA-API>:8080/swagger/index.html
+```ttu enfrenta dificuldades para localizar e gerenciar com precisão as motos estacionadas em seus pátios. O processo atual é manual, sujeito a erros e impacta negativamente a eficiência operacional e o controle de ativos.
 
 ---
 
@@ -281,15 +307,10 @@ az acr credential show --name <Nome ACR>
 ### ⚠️ PRÉ-REQUISITO OBRIGATÓRIO
 Antes de executar qualquer teste, você DEVE aplicar as migrations para criar as tabelas:
 
-#### **Como executar o update-database:**
+#### **Execução Local (Recomendado)**
 
 > **⚠️ ATENÇÃO - Projeto Multi-Package:** Como as migrations estão no projeto `MottuChallenge.Infrastructure` mas a string de conexão está no `MottuChallenge.Api`, você deve executar o comando da pasta raiz da solution especificando os projetos corretos.
 
-> **🔧 IMPORTANTE - Configuração da String de Conexão:**
-> - **MySQL no Azure**: Todos os cenários usam o IP público (`server=<IP-PUBLICO-DO-MYSQL>`)
-> - **MySQL local via Docker**: Apenas neste caso use o nome do serviço (`server=mysql`)
-
-**Opção 1: Localmente (Recomendado para desenvolvimento)**
 ```bash
 # Navegue até a pasta RAIZ da solution (onde está o .sln)
 cd /caminho/para/MottuGrid
@@ -305,35 +326,6 @@ cd MottuChallenge.Api
 dotnet ef database update --project ../MottuChallenge.Infrastructure
 ```
 
-**Opção 2: Dentro do Container da API**
-```bash
-# Acesse o container da API em execução no Azure
-az container exec --resource-group MottuGrid --name api-aci --exec-command "/bin/bash"
-
-# Dentro do container, navegue até a raiz da aplicação e execute:
-cd /app
-dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
-```
-
-**Opção 3: Via Docker Compose (Desenvolvimento local)**
-```bash
-# ANTES de executar, certifique-se de que no docker-compose.yml está configurado com o IP público do MySQL:
-# DB_CONNECTION: server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
-
-# Se estiver testando localmente com docker-compose
-docker-compose exec api dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
-```
-
-**📝 Resumo das Configurações de String de Conexão:**
-
-| Cenário | Local da Configuração | String de Conexão |
-|---------|----------------------|-------------------|
-| **Execução Local** | `appsettings.json` | `server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306` |
-| **Docker Compose** | `docker-compose.yml` | `server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306` |
-| **Azure ACI** | `aci-api.yaml` | `server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306` |
-
-> **📌 Importante:** Como o MySQL está rodando no Azure (ACI), todos os cenários precisam usar o IP público do MySQL. Apenas use `server=mysql` se você estiver rodando o MySQL também localmente via Docker Compose.
-
 **Estrutura Esperada do Projeto:**
 ```
 MottuGrid/
@@ -343,6 +335,10 @@ MottuGrid/
 ├── MottuChallenge.Domain/
 └── MottuGrid.sln
 ```
+
+> **Explicação dos Parâmetros:**
+> - `--startup-project`: Projeto que contém a string de conexão (MottuChallenge.Api)
+> - `--project`: Projeto que contém as migrations (MottuChallenge.Infrastructure)
 
 > **Importante:** Este comando deve ser executado APÓS o MySQL estar rodando e acessível. Sem ele, a API retornará erros de banco de dados!
 
