@@ -14,7 +14,7 @@ properties:
           - port: 8080
         environmentVariables:
           - name: DB_CONNECTION
-            value: server=<Api Banco>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
+            value: server=<IP Banco>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
   osType: Linux
   ipAddress:
     type: Public
