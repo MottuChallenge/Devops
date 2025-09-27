@@ -13,10 +13,18 @@ namespace MottuChallenge.Infrastructure
     {
         public static IServiceCollection AddDbContext(this IServiceCollection services, IConfiguration configuration)
         {
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION") 
+                                   ?? configuration.GetConnectionString("MySqlConnection");
+            Console.WriteLine($"DB_CONNECTION = {connectionString}, ");
             services.AddDbContext<MottuChallengeContext>(options =>
-            {
-                options.UseMySQL(configuration.GetConnectionString("MySqlConnection"));
-            });
+                options.UseMySQL(connectionString, mySqlOptions =>
+                    mySqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 15,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null
+                    )
+                )   
+            );
 
             return services;
         }

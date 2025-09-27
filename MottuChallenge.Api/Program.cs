@@ -10,6 +10,8 @@ namespace MottuChallenge.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Configuration.AddEnvironmentVariables();
+            
             // Add services to the container.
             builder.Services.AddDbContext(builder.Configuration);
             builder.Services.AddRepositories();
@@ -41,11 +43,9 @@ namespace MottuChallenge.Api
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+           app.UseSwaggerUI();
+          
 
             app.UseHttpsRedirection();
 
