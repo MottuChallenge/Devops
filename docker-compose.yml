@@ -15,10 +15,11 @@ services:
       - mysql_data:/var/lib/mysql
 
   api:
+    image: mottu-grid:1.0
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: mottu-api
+    container_name: mottu-grid
     ports:
       - "8080:8080"
     environment:
