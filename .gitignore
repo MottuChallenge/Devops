@@ -1,0 +1,81 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio cache/options
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Rider
+.idea/
+
+## Autogerados por debug
+*.dbmdl
+*.bak
+*.backup
+*.ldf
+*.mdf
+*.ndf
+
+## Arquivos de dependência
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+
+## Cache de NuGet
+*.nuget/
+*.nuget.props
+*.nuget.targets
+
+## Arquivos de publicação
+publish/
+*.Publish.xml
+*.pubxml
+*.pubxml.user
+*.pfx
+*.publishsettings
+
+## Testes
+TestResult*/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Arquivos de build
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Logs
+*.log
+
+## Backup e temporários
+~$*
+*.tmp
+*.temp
+*.bak
+
+## Arquivos locais de config
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+
+## Configuração do docker local
+docker-compose.override.yml
+
+## Arquivos do Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+## Arquivos do Mac
+.DS_Store

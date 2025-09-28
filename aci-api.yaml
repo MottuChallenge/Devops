@@ -1,0 +1,28 @@
+apiVersion: '2021-07-01'
+location: eastus
+name: api-aci
+properties:
+  containers:
+    - name: api
+      properties:
+        image: <Seu ACR>.azurecr.io/mottu-grid:1.0
+        resources:
+          requests:
+            cpu: 1
+            memoryInGb: 2
+        ports:
+          - port: 8080
+        environmentVariables:
+          - name: DB_CONNECTION
+            value: server=<IP Banco>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
+  osType: Linux
+  ipAddress:
+    type: Public
+    ports:
+      - protocol: tcp
+        port: 8080
+  restartPolicy: Always
+  imageRegistryCredentials:
+    - server: <Seu ACR>.azurecr.io
+      username: <Seu User>
+      password: <Sua Senha>
