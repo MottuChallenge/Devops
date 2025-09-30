@@ -275,15 +275,19 @@ az acr credential show --name <Nome ACR>
 ### ⚠️ PRÉ-REQUISITO OBRIGATÓRIO
 Antes de executar qualquer teste, você DEVE aplicar as migrations para criar as tabelas:
 
-#### **Como executar o update-database:**
+#### **Pré-requisitos para Execução Local:**
+```bash
+# Instalar as ferramentas Entity Framework globalmente (se ainda não tiver)
+dotnet tool install --global dotnet-ef
+
+# Verificar se foi instalado corretamente
+dotnet ef --version
+```
+
+#### **Execução Local (Recomendado)**
 
 > **⚠️ ATENÇÃO - Projeto Multi-Package:** Como as migrations estão no projeto `MottuChallenge.Infrastructure` mas a string de conexão está no `MottuChallenge.Api`, você deve executar o comando da pasta raiz da solution especificando os projetos corretos.
 
-> **🔧 IMPORTANTE - Configuração da String de Conexão:**
-> - **MySQL no Azure**: Todos os cenários usam o IP público (`server=<IP-PUBLICO-DO-MYSQL>`)
-> - **MySQL local via Docker**: Apenas neste caso use o nome do serviço (`server=mysql`)
-
-**Opção 1: Localmente (Recomendado para desenvolvimento)**
 ```bash
 # Navegue até a pasta RAIZ da solution (onde está o .sln)
 cd /Devops
@@ -293,19 +297,7 @@ cd /Devops
 
 # Execute o comando especificando o projeto startup (API) e o projeto das migrations (Infrastructure)
 dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
-
-# OU se estiver na pasta da API:
-cd MottuChallenge.Api
-dotnet ef database update --project ../MottuChallenge.Infrastructure
 ```
-
-**📝 Resumo das Configurações de String de Conexão:**
-
-| Cenário | Local da Configuração | String de Conexão |
-|---------|----------------------|-------------------|
-| **Execução Local** | `appsettings.json` | `server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306` |
-
-> **📌 Importante:** Como o MySQL está rodando no Azure (ACI), todos os cenários precisam usar o IP público do MySQL. Apenas use `server=mysql` se você estiver rodando o MySQL também localmente via Docker Compose.
 
 **Estrutura Esperada do Projeto:**
 ```
@@ -316,6 +308,10 @@ MottuGrid/
 ├── MottuChallenge.Domain/
 └── MottuGrid.sln
 ```
+
+> **Explicação dos Parâmetros:**
+> - `--startup-project`: Projeto que contém a string de conexão (MottuChallenge.Api)
+> - `--project`: Projeto que contém as migrations (MottuChallenge.Infrastructure)
 
 > **Importante:** Este comando deve ser executado APÓS o MySQL estar rodando e acessível. Sem ele, a API retornará erros de banco de dados!
 
