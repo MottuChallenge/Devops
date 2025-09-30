@@ -58,281 +58,162 @@ Este guia explica como configurar e implantar a aplicação MottuGrid no Azure u
 
 ---
 
-## 📋 Índice
-1. [Configuração do Azure Container Registry (ACR)](#configuração-do-azure-container-registry-acr)
-2. [Configuração do Banco de Dados com ACI](#configuração-do-banco-de-dados-com-aci)
-3. [Implantação da API com ACI](#implantação-da-api-com-aci)
-4. [Configuração de VM (Alternativa)](#configuração-de-vm-alternativa)
+## 📋 Pré-requisitos
 
----
-
-## 🏗️ Configuração do Azure Container Registry (ACR)
-
-### Puxar o projeto para a maquina
+### 1. Obter o Projeto
 ```bash
 git clone https://github.com/MottuChallenge/Devops.git
 cd /Devops
 ```
 
-
-### 1. Criar Resource Group
+### 2. Instalar Ferramentas Entity Framework (para migrations)
 ```bash
-az group create --name MottuGrid --location eastus
+dotnet tool install --global dotnet-ef
+dotnet ef --version
 ```
 
-### 2. Criar Azure Container Registry
+---
+
+## 🏗️ Configuração do Azure Container Registry (ACR)
+
+### 1. Criar Resource Group e ACR
 ```bash
+az group create --name MottuGrid --location eastus
+
 az acr create \
     --resource-group MottuGrid \
     --name <Nome ACR> \
     --sku Basic \
     --admin-enabled true
 ```
-> **Nota:** Substitua `<Nome ACR>` por um nome único para seu Container Registry
+> **Nota:** Substitua `<Nome ACR>` por um nome único globalmente
 
-### 3. Fazer Login no ACR
+### 2. Construir e Enviar Imagens
 ```bash
+# Login no ACR
 az acr login --name <Nome ACR>
-```
 
-### 4. Construir Imagens Localmente
-```bash
+# Construir imagens localmente
 docker-compose up -d
-docker images
-```
 
-### 5. Marcar e Enviar Imagem MySQL
-```bash
-# Marcar imagem MySQL
+# Marcar e enviar imagem MySQL
 docker tag mysql:8.0 <Nome ACR>.azurecr.io/mysql:8.0
-
-# Enviar para ACR
 docker push <Nome ACR>.azurecr.io/mysql:8.0
-```
 
-### 6. Marcar e Enviar Imagem da API
-```bash
-# Marcar imagem da API
+# Marcar e enviar imagem da API
 docker tag mottu-grid:1.0 <Nome ACR>.azurecr.io/mottu-grid:1.0
-
-# Enviar para ACR
 docker push <Nome ACR>.azurecr.io/mottu-grid:1.0
 ```
 
----
-
-## 🗄️ Configuração do Banco de Dados com ACI
-
-### 1. Configurar o arquivo aci-mysql.yaml
-Antes de implantar, você deve configurar o arquivo `aci-mysql.yaml` com os dados do seu ACR:
-
-```yaml
-# No arquivo aci-mysql.yaml, substitua:
-image: <Seu ACR>.azurecr.io/mysql:8.0
-server: <Seu ACR>.azurecr.io
-username: <Seu User>
-password: <Sua Senha>
-```
-
-> **Importante:** Para obter as credenciais do ACR, use:
+### 3. Obter Credenciais do ACR
 ```bash
 az acr credential show --name <Nome ACR>
+```
+Guarde o **username** e **password** para configurar os arquivos YAML.
+
+---
+
+## 🗄️ Configuração dos Arquivos YAML e Deploy
+
+### 1. Configurar aci-mysql.yaml
+Edite o arquivo `aci-mysql.yaml` substituindo as seguintes informações:
+```yaml
+image: <Seu ACR>.azurecr.io/mysql:8.0
+server: <Seu ACR>.azurecr.io
+username: <Username do ACR>
+password: <Password do ACR>
 ```
 
 ### 2. Implantar Container MySQL
 ```bash
 az container create --resource-group MottuGrid --file aci-mysql.yaml
-```
 
-### 3. Obter IP Público do MySQL
-```bash
+# Obter IP público do MySQL
 az container show --name mysql-aci --resource-group MottuGrid
 ```
-Procure pelo endereço IP na resposta:
-```json
-"ipAddress": {
-    "ip": "SEU-IP-PUBLICO-MYSQL"
-}
-```
 
-### 4. Conectar ao MySQL (Teste Opcional)
-```bash
-mysql -h <IP-DO-BANCO> -P 3306 -u user_test -p
-```
-
----
-
-## 🚀 Implantação da API com ACI
-
-### 1. Configurar o arquivo aci-api.yaml
-Antes de implantar a API, você deve configurar o arquivo `aci-api.yaml` com:
-
-**a) Dados do ACR:**
+### 3. Configurar aci-api.yaml
+Edite o arquivo `aci-api.yaml` substituindo:
 ```yaml
-# No arquivo aci-api.yaml, substitua:
+# Dados do ACR (mesmo do MySQL):
 image: <Seu ACR>.azurecr.io/mottu-grid:1.0
 server: <Seu ACR>.azurecr.io
-username: <Seu User>
-password: <Sua Senha>
+username: <Username do ACR>
+password: <Password do ACR>
+
+# String de conexão com IP do MySQL:
+value: server=<IP-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
 ```
 
-**b) String de Conexão com IP do MySQL:**
-```yaml
-# Atualize a variável de ambiente DB_CONNECTION com o IP público do MySQL:
-value: server=<IP-DO-BANCO>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
-```
-
-> **Dica:** Use o IP obtido na etapa anterior da configuração do MySQL
-
-### 2. Implantar Container da API
+### 4. Implantar Container da API
 ```bash
 az container create --resource-group MottuGrid --file aci-api.yaml
 ```
 
-### 3. Executar Migrations do Banco de Dados
-**⚠️ IMPORTANTE:** Antes de testar qualquer funcionalidade da API, você deve executar o comando para criar as tabelas no banco de dados:
+### 5. Executar Migrations do Entity Framework
+**⚠️ OBRIGATÓRIO:** Execute as migrations para criar as tabelas antes de testar a API:
 
-#### **Opção 1: Executar Localmente (Recomendado para desenvolvimento)**
 ```bash
-# Navegue até a pasta RAIZ da solution (onde está o MottuGrid.sln)
+# Navegue para a pasta raiz da solution
 cd /Devops
 
-# ANTES de executar, certifique-se de que no appsettings.json está configurado:
+# Configure a string de conexão no appsettings.json:
 # "MySqlConnection": "server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306"
 
-# Execute especificando o projeto startup (API) e o projeto das migrations (Infrastructure)
+# Execute as migrations
 dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
 ```
 
-> **Explicação dos Parâmetros:**
-> - `--startup-project`: Projeto que contém a string de conexão (MottuChallenge.Api)
-> - `--project`: Projeto que contém as migrations (MottuChallenge.Infrastructure)
+> **Explicação:** Como as migrations estão no projeto `MottuChallenge.Infrastructure` mas a string de conexão está no `MottuChallenge.Api`, especificamos ambos os projetos.
 
-> **Nota:** Este comando aplica todas as migrations pendentes e cria a estrutura das tabelas necessárias no banco `MottuGridDb`. **Sem este passo, a API não funcionará corretamente!**
+---
 
-#### **Como verificar se as tabelas foram criadas:**
+## � Comandos Úteis para Troubleshooting
+### Verificar Status dos Containers
 ```bash
-# Conecte ao MySQL e verifique as tabelas
-mysql -h <IP-DO-BANCO> -P 3306 -u user_test -p
-
-# Dentro do MySQL, execute:
-USE MottuGridDb;
-SHOW TABLES;
-```
-
----
-
-## 📝 Notas Importantes
-
-- **Nome do ACR:** Deve ser globalmente único no Azure
-- **IP do MySQL:** Salve o IP público do container MySQL para configuração da API
-- **String de Conexão:** Atualize a string de conexão da API com o IP do MySQL antes da implantação
-- **Resource Group:** Todos os recursos são criados no resource group `MottuGrid`
-- **Configuração dos YAMLs:** É essencial configurar os arquivos `aci-mysql.yaml` e `aci-api.yaml` com os dados corretos do ACR antes da implantação
-
----
-
-## ⚙️ Configuração dos Arquivos YAML
-
-### Dados necessários do ACR:
-1. **Nome do ACR:** `<Seu ACR>.azurecr.io`
-2. **Username:** Obtido com `az acr credential show --name <Nome ACR>`
-3. **Password:** Obtido com `az acr credential show --name <Nome ACR>`
-
-### Locais para configurar nos YAMLs:
-- **aci-mysql.yaml:** Seção `image` e `imageRegistryCredentials`
-- **aci-api.yaml:** Seção `image`, `imageRegistryCredentials` e variável `DB_CONNECTION`
-
----
-
-## 🔧 Solução de Problemas
-
-### Problemas Comuns
-- **Falha no Login do ACR:** Verifique se você tem as permissões adequadas e se o nome do ACR está correto
-- **Falha na Criação do Container:** Verifique se os arquivos YAML existem e estão configurados corretamente
-- **Problemas de Conexão com o Banco:** Verifique se o container MySQL está executando e se o IP está configurado corretamente na API
-
-### Comandos Úteis
-```bash
-# Verificar status dos containers
+# Status dos containers
 az container show --name mysql-aci --resource-group MottuGrid
 az container show --name api-aci --resource-group MottuGrid
 
-# Visualizar logs dos containers
-az container logs --name mysql-aci --resource-group MottuGrid
-az container logs --name api-aci --resource-group MottuGrid
-
-# Listar todos os containers no resource group
+# Listar todos os containers
 az container list --resource-group MottuGrid --output table
-
-# Obter credenciais do ACR
-az acr credential show --name <Nome ACR>
 ```
---------
+
+### Visualizar Logs
+```bash
+# Logs do MySQL
+az container logs --name mysql-aci --resource-group MottuGrid
+
+# Logs da API
+az container logs --name api-aci --resource-group MottuGrid
+```
+
+### Obter URL da API
+```bash
+# Obter IP da API para acessar o Swagger
+az container show --name api-aci --resource-group MottuGrid
+# URL: http://<ip-do-api-aci>:8080/swagger/index.html
+```
+
+### Teste de Conexão MySQL (Opcional)
+```bash
+mysql -h <IP-DO-MYSQL> -P 3306 -u user_test -p
+# Dentro do MySQL: USE MottuGridDb; SHOW TABLES;
+```
+---
 
 ## 🧪 Testando a Aplicação
 
-### ⚠️ PRÉ-REQUISITO OBRIGATÓRIO
-Antes de executar qualquer teste, você DEVE aplicar as migrations para criar as tabelas:
+### Acessar o Swagger
+1. Obtenha o IP da API:
+   ```bash
+   az container show --name api-aci --resource-group MottuGrid
+   ```
+2. Acesse: `http://<ip-do-api-aci>:8080/swagger/index.html`
 
-#### **Pré-requisitos para Execução Local:**
-```bash
-# Instalar as ferramentas Entity Framework globalmente (se ainda não tiver)
-dotnet tool install --global dotnet-ef
+### Exemplos de Requisições
 
-# Verificar se foi instalado corretamente
-dotnet ef --version
-```
-
-#### **Execução Local (Recomendado)**
-
-> **⚠️ ATENÇÃO - Projeto Multi-Package:** Como as migrations estão no projeto `MottuChallenge.Infrastructure` mas a string de conexão está no `MottuChallenge.Api`, você deve executar o comando da pasta raiz da solution especificando os projetos corretos.
-
-```bash
-# Navegue até a pasta RAIZ da solution (onde está o .sln)
-cd /Devops
-
-# ANTES de executar, certifique-se de que no appsettings.json está configurado:
-# "MySqlConnection": "server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306"
-
-# Execute o comando especificando o projeto startup (API) e o projeto das migrations (Infrastructure)
-dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
-```
-
-**Estrutura Esperada do Projeto:**
-```
-MottuGrid/
-├── MottuChallenge.Api/           (← String de conexão)
-├── MottuChallenge.Infrastructure/ (← Migrations)
-├── MottuChallenge.Application/
-├── MottuChallenge.Domain/
-└── MottuGrid.sln
-```
-
-> **Explicação dos Parâmetros:**
-> - `--startup-project`: Projeto que contém a string de conexão (MottuChallenge.Api)
-> - `--project`: Projeto que contém as migrations (MottuChallenge.Infrastructure)
-
-> **Importante:** Este comando deve ser executado APÓS o MySQL estar rodando e acessível. Sem ele, a API retornará erros de banco de dados!
-
-
-### Url para entrar na api
-
-- rode o comando
-  ```bash
-    az container show --name api-aci --resource-group MottuGrid
-  ```
-- Pegue o IP do api-aci
-- Coloque no navegado a url
-```
-# http://<ip-do-api-aci>:8080/swagger/index.html
-```
-
-### Exemplos de Testes
-
-**POST /api/yards**
-Content-Type: application/json
-
+**POST /api/yards** - Criar Pátio
 ```json
 {
   "name": "Pátio Central",
@@ -346,11 +227,8 @@ Content-Type: application/json
   ]
 }
 ```
-> **Nota:** Este endpoint usa a API do ViaCEP para buscar automaticamente o endereço
 
-**PUT /api/yards/{id}**
-Content-Type: application/json
-
+**PUT /api/yards/{id}** - Atualizar Pátio
 ```json
 {
   "name": "Pátio Central Renovado"
