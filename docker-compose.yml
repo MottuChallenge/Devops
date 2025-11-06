@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: mysqlTeste
+    container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: MottuGridDb
@@ -27,7 +27,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_CONNECTION: server=mysqlTeste;uid=user_test;pwd=user_password;database=MottuGridDb;port=3307
+      DB_CONNECTION: server=mysql;uid=user_test;pwd=user_password;database=MottuGridDb;port=3307
     depends_on:
       db:
         condition: service_healthy

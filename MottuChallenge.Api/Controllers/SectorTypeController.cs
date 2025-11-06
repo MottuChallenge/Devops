@@ -1,14 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Swashbuckle.AspNetCore.Annotations;
+using MottuChallenge.Api.Hateoas;
 using MottuChallenge.Application.DTOs.Request;
+using MottuChallenge.Application.DTOs.Response;
 using MottuChallenge.Application.DTOs.Validations;
 using MottuChallenge.Application.UseCases.SectorTypes;
 using MottuChallenge.Domain.Exceptions;
 
 namespace MottuChallenge.Api.Controllers
 {
-    [Route("api/sectors_type")]
+    [Route("api/v{version:apiVersion}/sectors_type")]
     [ApiController]
+    [Produces("application/json")]
+    [SwaggerTag("Sector Types - CRUD operations")]
+    [ApiVersion(1.0)]
     public class SectorTypeController : ControllerBase
     {
         private readonly CreateSectorTypeUseCase _createSectorTypeUseCase;
@@ -34,20 +41,12 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Cria um novo tipo de setor.
         /// </summary>
-        /// <param name="sectorTypeCreateDto">Objeto contendo os dados do tipo de setor.</param>
-        /// <returns>Retorna o tipo de setor criado com status 201.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     POST /api/sectors_type
-        ///     {
-        ///        "name": "Setor VIP"
-        ///     }
-        ///
-        /// </remarks>
-        /// <response code="201">Tipo de setor criado com sucesso.</response>
-        /// <response code="400">Falha de validação.</response>
         [HttpPost]
+        [Consumes("application/json")]
+        [SwaggerOperation(Summary = "Create new sector type", Description = "Creates a new sector type")]
+        [ProducesResponseType(typeof(SectorTypeResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Post([FromBody] SectorTypeDto sectorTypeCreateDto)
         {
             var validator = new SectorTypeDtoValidator();
@@ -67,7 +66,14 @@ namespace MottuChallenge.Api.Controllers
             try
             {
                 var createdSectorType = await _createSectorTypeUseCase.SaveSectorType(sectorTypeCreateDto);
-                return CreatedAtAction(nameof(GetById), new { id = createdSectorType.Id }, createdSectorType);
+                var sectorTypeResponse = new SectorTypeResponseDto()
+                {
+                    Id = createdSectorType.Id,
+                    Name = createdSectorType.Name,
+                    Links = SectorTypeLinkBuilder.BuildSectorTypeLinks(Url, createdSectorType.Id)
+                };
+
+                return CreatedAtAction(nameof(GetById), new { id = createdSectorType.Id }, sectorTypeResponse);
             }
             catch (DomainValidationException ex)
             {
@@ -78,14 +84,20 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Lista todos os tipos de setores.
         /// </summary>
-        /// <returns>Lista de tipos de setores.</returns>
-        /// <response code="200">Retorna a lista de tipos de setores.</response>
         [HttpGet]
+        [SwaggerOperation(Summary = "Get all sector types", Description = "Returns a list of all sector types")]
+        [ProducesResponseType(typeof(List<SectorTypeResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Get()
         {
             try
             {
                 var sectorTypes = await _getAllSectorTypesUseCase.FindAllSectorTypes();
+                foreach (var sectorTypeResponseDto in sectorTypes)
+                {
+                    sectorTypeResponseDto.Links = SectorTypeLinkBuilder.BuildSectorTypeLinks(Url, sectorTypeResponseDto.Id);
+                }
+
                 return Ok(sectorTypes);
             }
             catch (Exception ex)
@@ -97,28 +109,24 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Atualiza um tipo de setor existente pelo ID.
         /// </summary>
-        /// <param name="id">ID do tipo de setor a ser atualizado.</param>
-        /// <param name="sectorTypeDto">Objeto contendo os novos dados do tipo de setor.</param>
-        /// <returns>Tipo de setor atualizado.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     PUT /api/sectors_type/123e4567-e89b-12d3-a456-426614174000
-        ///     {
-        ///        "name": "Setor Premium"
-        ///     }
-        ///
-        /// </remarks>
-        /// <response code="200">Tipo de setor atualizado com sucesso.</response>
-        /// <response code="400">Falha de validação.</response>
-        /// <response code="404">Tipo de setor não encontrado.</response>
         [HttpPut("{id}")]
+        [Consumes("application/json")]
+        [SwaggerOperation(Summary = "Update sector type", Description = "Updates an existing sector type")]
+        [ProducesResponseType(typeof(SectorTypeResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Put([FromRoute] Guid id, [FromBody] SectorTypeDto sectorTypeDto)
         {
             try
             {
                 var updatedSectorType = await _updateSectorTypeUseCase.UpdateSectorTypeById(sectorTypeDto, id);
-                return Ok(updatedSectorType);
+                var response = new SectorTypeResponseDto()
+                {
+                    Id = updatedSectorType.Id,
+                    Name = updatedSectorType.Name,
+                    Links = SectorTypeLinkBuilder.BuildSectorTypeLinks(Url, updatedSectorType.Id)
+                };
+                return Ok(response);
             }
             catch (DomainValidationException ex)
             {
@@ -133,17 +141,11 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Remove um tipo de setor pelo ID.
         /// </summary>
-        /// <param name="id">ID do tipo de setor a ser removido.</param>
-        /// <returns>Status 204 se removido com sucesso.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     DELETE /api/sectors_type/123e4567-e89b-12d3-a456-426614174000
-        ///
-        /// </remarks>
-        /// <response code="204">Tipo de setor removido com sucesso.</response>
-        /// <response code="404">Tipo de setor não encontrado.</response>
         [HttpDelete("{id}")]
+        [SwaggerOperation(Summary = "Delete sector type", Description = "Deletes a sector type by id")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
             try
@@ -164,23 +166,23 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Consulta um tipo de setor pelo ID.
         /// </summary>
-        /// <param name="id">ID do tipo de setor.</param>
-        /// <returns>Dados do tipo de setor encontrado.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     GET /api/sectors_type/123e4567-e89b-12d3-a456-426614174000
-        ///
-        /// </remarks>
-        /// <response code="200">Tipo de setor encontrado.</response>
-        /// <response code="404">Tipo de setor não encontrado.</response>
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById([FromRoute] Guid id)
+        [SwaggerOperation(Summary = "Get sector type by id", Description = "Retrieves sector type details by id")]
+        [ProducesResponseType(typeof(SectorTypeResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct = default)
         {
             try
             {
                 var sectorType = await _getSectorTypeByIdUseCase.FindSectorTypeById(id);
-                return Ok(sectorType);
+                var sectorTypeResponse = new SectorTypeResponseDto()
+                {
+                    Id = sectorType.Id,
+                    Name = sectorType.Name,
+                    Links = SectorTypeLinkBuilder.BuildSectorTypeLinks(Url, sectorType.Id)
+                };
+
+                return Ok(sectorTypeResponse);
             }
             catch (KeyNotFoundException ex)
             {

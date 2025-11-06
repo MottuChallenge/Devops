@@ -8,7 +8,7 @@ namespace MottuChallenge.Infrastructure.Mapping
     {
         public void Configure(EntityTypeBuilder<Motorcycle> builder)
         {
-            builder.ToTable("Motorcycles");
+            builder.ToTable("motorcycles");
 
             builder.HasKey(m => m.Id);
 

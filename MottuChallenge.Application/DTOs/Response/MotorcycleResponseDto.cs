@@ -10,5 +10,6 @@ namespace MottuChallenge.Application.DTOs.Response
         public string Plate { get; set; } = null!;
         public DateTime LastRevisionDate { get; set; }
         public Guid? SpotId { get; set; }
+        public List<HateoasLink> Links { get; set; }
     }
 }

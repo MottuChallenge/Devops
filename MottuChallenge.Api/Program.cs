@@ -1,5 +1,7 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using MottuChallenge.Api.Extensions;
 using MottuChallenge.Application;
+using MottuChallenge.Application.Configurations;
 using MottuChallenge.Infrastructure;
 
 namespace MottuChallenge.Api
@@ -9,50 +11,45 @@ namespace MottuChallenge.Api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
-            builder.Configuration.AddEnvironmentVariables();
+            var configs = builder.Configuration.Get<Settings>();
             
-            // Add services to the container.
-            builder.Services.AddDbContext(builder.Configuration);
-            builder.Services.AddRepositories();
-            builder.Services.AddServices();
+            builder.Services.AddInfrastructure(configs);    
             builder.Services.AddUseCases();
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Mottu Challenge API",
-                    Version = "v1",
-                    Description = "API para gerenciamento de motocicletas, pátios e setores.",
-                    Contact = new OpenApiContact
-                    {
-                        Name = "Pedro Henrique",
-                        Email = "rm559064@fiap.com.br",
-                        Url = new Uri("https://github.com/Pedro-Henrique3216")
-                    }
-                });
-                var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                c.IncludeXmlComments(xmlPath);
-            });
-            
+            builder.Services.AddSwagger(configs.Swagger);
+            builder.Services.AddHealthServices(configs.ConnectionStrings);
+            builder.Services.AddVersioning();
 
             var app = builder.Build();
+            
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
+            
 
             // Configure the HTTP request pipeline.
-            app.UseSwagger();
-           app.UseSwaggerUI();
-          
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(ui =>
+                    {
+                        ui.SwaggerEndpoint("/swagger/v1/swagger.json",  "MottuGrid.API v1");
+                        ui.SwaggerEndpoint("/swagger/v2/swagger.json",  "MottuGrid.API v2");
+                    }
+                );
+            }
 
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
-
+            
             app.MapControllers();
+            
+            app.MapHealthChecks("/api/health-check", new HealthCheckOptions
+            {
+                ResponseWriter = HealthCheckExtensions.WriteResponse
+            });
 
             app.Run();
         }

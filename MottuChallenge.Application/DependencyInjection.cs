@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MottuChallenge.Application.UseCases.Employees;
 using MottuChallenge.Application.UseCases.Motorcycles;
 using MottuChallenge.Application.UseCases.Sectors;
 using MottuChallenge.Application.UseCases.SectorTypes;
@@ -32,7 +33,9 @@ namespace MottuChallenge.Application
             services.AddScoped<DeleteYardUseCase>();
             services.AddScoped<DeleteMotorcycleUseCase>();
             services.AddScoped<GetMotorcycleByIdUseCase>();
-
+            services.AddScoped<CreateEmployeeUseCase>();
+            services.AddScoped<LoginUseCase>();
+            
             return services;
         }
     }

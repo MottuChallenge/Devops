@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MottuChallenge.Infrastructure.Persistence;
@@ -11,16 +12,18 @@ using MottuChallenge.Infrastructure.Persistence;
 namespace MottuChallenge.Infrastructure.Migrations
 {
     [DbContext(typeof(MottuChallengeContext))]
-    [Migration("20250909021631_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251026204945_inital-create-table")]
+    partial class initalcreatetable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.19")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Address", b =>
                 {
@@ -137,7 +140,7 @@ namespace MottuChallenge.Infrastructure.Migrations
                         .HasMaxLength(8)
                         .HasColumnType("varchar(8)");
 
-                    b.Property<Guid>("SpotId")
+                    b.Property<Guid?>("SpotId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
@@ -145,43 +148,7 @@ namespace MottuChallenge.Infrastructure.Migrations
                     b.HasIndex("SpotId")
                         .IsUnique();
 
-                    b.ToTable("Motorcycles", (string)null);
-                });
-
-            modelBuilder.Entity("MottuChallenge.Domain.Entities.PolygonPoint", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id");
-
-                    b.Property<int>("PointOrder")
-                        .HasColumnType("int")
-                        .HasColumnName("point_order");
-
-                    b.Property<Guid?>("SectorId")
-                        .HasColumnType("char(36)")
-                        .HasColumnName("sector_id");
-
-                    b.Property<double>("X")
-                        .HasColumnType("double")
-                        .HasColumnName("x");
-
-                    b.Property<double>("Y")
-                        .HasColumnType("double")
-                        .HasColumnName("y");
-
-                    b.Property<Guid?>("YardId")
-                        .HasColumnType("char(36)")
-                        .HasColumnName("yard_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SectorId");
-
-                    b.HasIndex("YardId");
-
-                    b.ToTable("polygon_points", (string)null);
+                    b.ToTable("motorcycles", (string)null);
                 });
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Sector", b =>
@@ -323,23 +290,6 @@ namespace MottuChallenge.Infrastructure.Migrations
                     b.Navigation("Spot");
                 });
 
-            modelBuilder.Entity("MottuChallenge.Domain.Entities.PolygonPoint", b =>
-                {
-                    b.HasOne("MottuChallenge.Domain.Entities.Sector", "Sector")
-                        .WithMany("Points")
-                        .HasForeignKey("SectorId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("MottuChallenge.Domain.Entities.Yard", "Yard")
-                        .WithMany("Points")
-                        .HasForeignKey("YardId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Sector");
-
-                    b.Navigation("Yard");
-                });
-
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Sector", b =>
                 {
                     b.HasOne("MottuChallenge.Domain.Entities.SectorType", "SectorType")
@@ -353,6 +303,39 @@ namespace MottuChallenge.Infrastructure.Migrations
                         .HasForeignKey("YardId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsMany("MottuChallenge.Domain.ValueObjects.PolygonPoint", "Points", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("char(36)");
+
+                            b1.Property<int>("PointOrder")
+                                .HasColumnType("int")
+                                .HasColumnName("point_order");
+
+                            b1.Property<Guid>("SectorId")
+                                .HasColumnType("char(36)");
+
+                            b1.Property<double>("X")
+                                .HasColumnType("double")
+                                .HasColumnName("x");
+
+                            b1.Property<double>("Y")
+                                .HasColumnType("double")
+                                .HasColumnName("y");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("SectorId");
+
+                            b1.ToTable("sector_points", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("SectorId");
+                        });
+
+                    b.Navigation("Points");
 
                     b.Navigation("SectorType");
 
@@ -378,13 +361,44 @@ namespace MottuChallenge.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.OwnsMany("MottuChallenge.Domain.ValueObjects.PolygonPoint", "Points", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("char(36)");
+
+                            b1.Property<int>("PointOrder")
+                                .HasColumnType("int")
+                                .HasColumnName("point_order");
+
+                            b1.Property<double>("X")
+                                .HasColumnType("double")
+                                .HasColumnName("x");
+
+                            b1.Property<double>("Y")
+                                .HasColumnType("double")
+                                .HasColumnName("y");
+
+                            b1.Property<Guid>("YardId")
+                                .HasColumnType("char(36)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("YardId");
+
+                            b1.ToTable("yard_points", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("YardId");
+                        });
+
                     b.Navigation("Address");
+
+                    b.Navigation("Points");
                 });
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Sector", b =>
                 {
-                    b.Navigation("Points");
-
                     b.Navigation("Spots");
                 });
 
@@ -395,8 +409,6 @@ namespace MottuChallenge.Infrastructure.Migrations
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Yard", b =>
                 {
-                    b.Navigation("Points");
-
                     b.Navigation("Sectors");
                 });
 #pragma warning restore 612, 618

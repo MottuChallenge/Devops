@@ -5,5 +5,6 @@ namespace MottuChallenge.Application.DTOs.Response
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
+        public List<HateoasLink> Links { get; set; }
     }
 }

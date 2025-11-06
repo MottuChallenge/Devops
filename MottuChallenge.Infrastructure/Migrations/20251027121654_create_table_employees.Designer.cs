@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MottuChallenge.Infrastructure.Persistence;
@@ -11,16 +12,18 @@ using MottuChallenge.Infrastructure.Persistence;
 namespace MottuChallenge.Infrastructure.Migrations
 {
     [DbContext(typeof(MottuChallengeContext))]
-    [Migration("20250922133106_v3")]
-    partial class v3
+    [Migration("20251027121654_create_table_employees")]
+    partial class create_table_employees
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.19")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Address", b =>
                 {
@@ -72,6 +75,46 @@ namespace MottuChallenge.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("addresses", (string)null);
+                });
+
+            modelBuilder.Entity("MottuChallenge.Domain.Entities.Employee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("password_salt");
+
+                    b.Property<Guid>("YardId")
+                        .HasColumnType("char(36)")
+                        .HasColumnName("yard_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("YardId");
+
+                    b.ToTable("employees", (string)null);
                 });
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Log", b =>
@@ -145,7 +188,7 @@ namespace MottuChallenge.Infrastructure.Migrations
                     b.HasIndex("SpotId")
                         .IsUnique();
 
-                    b.ToTable("Motorcycles", (string)null);
+                    b.ToTable("motorcycles", (string)null);
                 });
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Sector", b =>
@@ -248,6 +291,17 @@ namespace MottuChallenge.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("yards", (string)null);
+                });
+
+            modelBuilder.Entity("MottuChallenge.Domain.Entities.Employee", b =>
+                {
+                    b.HasOne("MottuChallenge.Domain.Entities.Yard", "Yard")
+                        .WithMany()
+                        .HasForeignKey("YardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Yard");
                 });
 
             modelBuilder.Entity("MottuChallenge.Domain.Entities.Log", b =>
