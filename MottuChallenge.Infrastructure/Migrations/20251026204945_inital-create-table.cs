@@ -1,59 +1,66 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using MySql.EntityFrameworkCore.Metadata;
 
 #nullable disable
 
 namespace MottuChallenge.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initalcreatetable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "addresses",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    street = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false),
+                    id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    street = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     number = table.Column<int>(type: "int", nullable: false),
-                    neighborhood = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    city = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    state = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false),
-                    zip_code = table.Column<string>(type: "varchar(8)", maxLength: 8, nullable: false),
+                    neighborhood = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    city = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    state = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    zip_code = table.Column<string>(type: "varchar(8)", maxLength: 8, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     country = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_addresses", x => x.id);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "sector_types",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     name = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_sector_types", x => x.id);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "yards",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    name = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false),
-                    address_id = table.Column<Guid>(type: "char(36)", nullable: false)
+                    id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    name = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    address_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
@@ -65,15 +72,15 @@ namespace MottuChallenge.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "sectors",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    yard_id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    sector_type_id = table.Column<Guid>(type: "char(36)", nullable: false)
+                    id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    yard_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    sector_type_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
@@ -91,48 +98,63 @@ namespace MottuChallenge.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "polygon_points",
+                name: "yard_points",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
-                    yard_id = table.Column<Guid>(type: "char(36)", nullable: true),
-                    sector_id = table.Column<Guid>(type: "char(36)", nullable: true),
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     point_order = table.Column<int>(type: "int", nullable: false),
                     x = table.Column<double>(type: "double", nullable: false),
-                    y = table.Column<double>(type: "double", nullable: false)
+                    y = table.Column<double>(type: "double", nullable: false),
+                    YardId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_polygon_points", x => x.id);
+                    table.PrimaryKey("PK_yard_points", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_polygon_points_sectors_sector_id",
-                        column: x => x.sector_id,
-                        principalTable: "sectors",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_polygon_points_yards_yard_id",
-                        column: x => x.yard_id,
+                        name: "FK_yard_points_yards_YardId",
+                        column: x => x.YardId,
                         principalTable: "yards",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "sector_points",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    point_order = table.Column<int>(type: "int", nullable: false),
+                    x = table.Column<double>(type: "double", nullable: false),
+                    y = table.Column<double>(type: "double", nullable: false),
+                    SectorId = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_sector_points", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_sector_points_sectors_SectorId",
+                        column: x => x.SectorId,
+                        principalTable: "sectors",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "spots",
                 columns: table => new
                 {
-                    spot_id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    sector_id = table.Column<Guid>(type: "char(36)", nullable: false),
+                    spot_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    sector_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
                     x = table.Column<double>(type: "double", nullable: false),
                     y = table.Column<double>(type: "double", nullable: false),
-                    status = table.Column<string>(type: "longtext", nullable: false),
-                    motorcycle_id = table.Column<Guid>(type: "char(36)", nullable: true)
+                    status = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    motorcycle_id = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
@@ -144,49 +166,53 @@ namespace MottuChallenge.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Motorcycles",
+                name: "motorcycles",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    Model = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false),
-                    EngineType = table.Column<string>(type: "longtext", nullable: false),
-                    Plate = table.Column<string>(type: "varchar(8)", maxLength: 8, nullable: false),
+                    Id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    Model = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EngineType = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Plate = table.Column<string>(type: "varchar(8)", maxLength: 8, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     LastRevisionDate = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    SpotId = table.Column<Guid>(type: "char(36)", nullable: false)
+                    SpotId = table.Column<Guid>(type: "char(36)", nullable: true, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Motorcycles", x => x.Id);
+                    table.PrimaryKey("PK_motorcycles", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Motorcycles_spots_SpotId",
+                        name: "FK_motorcycles_spots_SpotId",
                         column: x => x.SpotId,
                         principalTable: "spots",
                         principalColumn: "spot_id",
                         onDelete: ReferentialAction.Restrict);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "logs",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    message = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false),
+                    id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    message = table.Column<string>(type: "varchar(150)", maxLength: 150, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    motorcycle_id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    previous_spot_id = table.Column<Guid>(type: "char(36)", nullable: false),
-                    destination_spot_id = table.Column<Guid>(type: "char(36)", nullable: false)
+                    motorcycle_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    previous_spot_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    destination_spot_id = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_logs", x => x.id);
                     table.ForeignKey(
-                        name: "FK_logs_Motorcycles_motorcycle_id",
+                        name: "FK_logs_motorcycles_motorcycle_id",
                         column: x => x.motorcycle_id,
-                        principalTable: "Motorcycles",
+                        principalTable: "motorcycles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -202,7 +228,7 @@ namespace MottuChallenge.Infrastructure.Migrations
                         principalColumn: "spot_id",
                         onDelete: ReferentialAction.Restrict);
                 })
-                .Annotation("MySQL:Charset", "utf8mb4");
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
                 name: "IX_logs_destination_spot_id",
@@ -220,20 +246,15 @@ namespace MottuChallenge.Infrastructure.Migrations
                 column: "previous_spot_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Motorcycles_SpotId",
-                table: "Motorcycles",
+                name: "IX_motorcycles_SpotId",
+                table: "motorcycles",
                 column: "SpotId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_polygon_points_sector_id",
-                table: "polygon_points",
-                column: "sector_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_polygon_points_yard_id",
-                table: "polygon_points",
-                column: "yard_id");
+                name: "IX_sector_points_SectorId",
+                table: "sector_points",
+                column: "SectorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_sectors_sector_type_id",
@@ -251,6 +272,11 @@ namespace MottuChallenge.Infrastructure.Migrations
                 column: "sector_id");
 
             migrationBuilder.CreateIndex(
+                name: "IX_yard_points_YardId",
+                table: "yard_points",
+                column: "YardId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_yards_address_id",
                 table: "yards",
                 column: "address_id",
@@ -264,10 +290,13 @@ namespace MottuChallenge.Infrastructure.Migrations
                 name: "logs");
 
             migrationBuilder.DropTable(
-                name: "polygon_points");
+                name: "sector_points");
 
             migrationBuilder.DropTable(
-                name: "Motorcycles");
+                name: "yard_points");
+
+            migrationBuilder.DropTable(
+                name: "motorcycles");
 
             migrationBuilder.DropTable(
                 name: "spots");

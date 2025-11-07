@@ -1,5 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// csharp
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Swashbuckle.AspNetCore.Annotations;
+using MottuChallenge.Api.Hateoas;
 using MottuChallenge.Application.DTOs.Request;
 using MottuChallenge.Application.DTOs.Response;
 using MottuChallenge.Application.DTOs.Validations;
@@ -9,8 +19,11 @@ using MottuChallenge.Domain.Exceptions;
 
 namespace MottuChallenge.Api.Controllers
 {
-    [Route("api/yards")]
+    [Route("api/v{version:apiVersion}/yards")]
     [ApiController]
+    [Produces("application/json")]
+    [SwaggerTag("Yards - CRUD operations")]
+    [ApiVersion(1.0)]
     public class YardController : ControllerBase
     {
         private readonly CreateYardUseCase _createYardUseCase;
@@ -36,27 +49,12 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Cria um novo pátio.
         /// </summary>
-        /// <param name="createYardDto">Objeto contendo os dados do pátio.</param>
-        /// <returns>Retorna o pátio criado com status 201.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     POST /api/yards
-        ///     {
-        ///        "name": "Pátio Central",
-        ///        "cep": "12345-678",
-        ///        "number": "100",
-        ///        "points": [
-        ///          { "pointOrder": 1, "x": 10.5, "y": 20.5 },
-        ///          { "pointOrder": 2, "x": 15.0, "y": 25.0 },
-        ///          { "pointOrder": 3, "x": 20.5, "y": 20.5 }
-        ///        ]
-        ///     }
-        ///
-        /// </remarks>
-        /// <response code="201">Pátio criado com sucesso.</response>
-        /// <response code="400">Falha de validação.</response>
         [HttpPost]
+        [Consumes("application/json")]
+        [SwaggerOperation(Summary = "Create new yard", Description = "Creates a new yard")]
+        [ProducesResponseType(typeof(YardResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Post([FromBody] CreateYardDto createYardDto)
         {
             var validator = new CreateYardDtoValidator();
@@ -75,7 +73,31 @@ namespace MottuChallenge.Api.Controllers
             try
             {
                 var createdYard = await _createYardUseCase.SaveYard(createYardDto);
-                return CreatedAtAction(nameof(GetById), new { id = createdYard.Id }, createdYard);
+                var addressResponse = new AddressResponseDto()
+                {
+                    ZipCode = createdYard.Address.ZipCode,
+                    Street = createdYard.Address.Street,
+                    Number = createdYard.Address.Number,
+                    City = createdYard.Address.City,
+                    State = createdYard.Address.State
+                };
+
+                var pointResponses = createdYard.Points.Select(p => new PointResponseDto()
+                {
+                    PointOrder = p.PointOrder,
+                    X = p.X,
+                    Y = p.Y
+                }).ToList();
+                var yardResponse = new YardResponseDto()
+                {
+                    Id = createdYard.Id,
+                    Name = createdYard.Name,
+                    Address = addressResponse,
+                    Points = pointResponses,
+                    Links = YardLinkBuilder.BuildYardLinks(Url, createdYard.Id)
+                };
+
+                return CreatedAtAction(nameof(GetById), new { id = createdYard.Id }, yardResponse);
             }
             catch (DomainValidationException ex)
             {
@@ -86,14 +108,20 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Lista todos os pátios.
         /// </summary>
-        /// <returns>Lista de pátios.</returns>
-        /// <response code="200">Retorna a lista de pátios.</response>
         [HttpGet]
+        [SwaggerOperation(Summary = "Get all yards", Description = "Returns a list of all yards")]
+        [ProducesResponseType(typeof(List<YardResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllYardsAsync()
         {
             try
             {
                 var yards = await _getAllYardsUseCase.FindAllYards();
+                foreach (var yardResponseDto in yards)
+                {
+                    yardResponseDto.Links = YardLinkBuilder.BuildYardLinks(Url, yardResponseDto.Id);
+                }
+
                 return Ok(yards);
             }
             catch (Exception ex)
@@ -105,16 +133,17 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Consulta um pátio pelo ID.
         /// </summary>
-        /// <param name="id">ID do pátio.</param>
-        /// <returns>Dados do pátio encontrado.</returns>
-        /// <response code="200">Pátio encontrado.</response>
-        /// <response code="404">Pátio não encontrado.</response>
         [HttpGet("{id}")]
+        [SwaggerOperation(Summary = "Get yard by id", Description = "Retrieves yard details by id")]
+        [ProducesResponseType(typeof(YardResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById([FromRoute] Guid id)
         {
             try
             {
                 var yard = await _getYardByIdUseCase.FindYardById(id);
+                yard.Links = YardLinkBuilder.BuildYardLinks(Url, yard.Id);
+
                 return Ok(yard);
             }
             catch (KeyNotFoundException ex)
@@ -126,19 +155,12 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Atualiza o nome de um pátio existente pelo ID.
         /// </summary>
-        /// <param name="id">ID do pátio.</param>
-        /// <param name="dto">Objeto contendo o novo nome do pátio.</param>
-        /// <returns>Status 204 se atualizado com sucesso.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     PUT /api/yards/123e4567-e89b-12d3-a456-426614174000
-        ///     {
-        ///        "name": "Pátio Renovado"
-        ///     }
-        ///
-        /// </remarks>
         [HttpPut("{id}")]
+        [Consumes("application/json")]
+        [SwaggerOperation(Summary = "Update yard name", Description = "Updates the yard name by id")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateYardName([FromRoute] Guid id, [FromBody] UpdateYardDto dto)
         {
             try
@@ -159,15 +181,11 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Remove um pátio pelo ID.
         /// </summary>
-        /// <param name="id">ID do pátio.</param>
-        /// <returns>Status 204 se removido com sucesso.</returns>
-        /// <remarks>
-        /// Exemplo de request:
-        ///
-        ///     DELETE /api/yards/123e4567-e89b-12d3-a456-426614174000
-        ///
-        /// </remarks>
         [HttpDelete("{id}")]
+        [SwaggerOperation(Summary = "Delete yard", Description = "Deletes a yard by id")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> DeleteYard([FromRoute] Guid id)
         {
             try
@@ -188,12 +206,10 @@ namespace MottuChallenge.Api.Controllers
         /// <summary>
         /// Lista pátios paginados.
         /// </summary>
-        /// <param name="page">Número da página (default: 1).</param>
-        /// <param name="pageSize">Tamanho da página (default: 10).</param>
-        /// <param name="name">Filtro pelo nome do pátio (opcional).</param>
-        /// <param name="ct">Token de cancelamento.</param>
-        /// <returns>Resultado paginado de pátios.</returns>
         [HttpGet("paginated")]
+        [SwaggerOperation(Summary = "Get paginated yards", Description = "Returns a paginated list of yards")]
+        [ProducesResponseType(typeof(PaginatedResult<YardResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllPaginated(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -214,6 +230,7 @@ namespace MottuChallenge.Api.Controllers
             try
             {
                 var result = await _getAllYardsUseCase.FindAllYardPageable(pageRequest, filter, ct);
+                result.Links = PaginatedLinkBuilder.BuildPaginatedLinks("GetAllPaginated", "yards", Url, page, pageSize, result.TotalPages);
                 return Ok(result);
             }
             catch (Exception ex)

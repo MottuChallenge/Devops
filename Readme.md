@@ -1,4 +1,4 @@
-## 👥 INTEGRANTES DO GRUPO
+## INTEGRANTES DO GRUPO
 
 - RM559064 - Pedro Henrique dos Santos
 - RM556182 - Vinícius de Oliveira Coutinho
@@ -12,7 +12,7 @@ A Mottu enfrenta dificuldades para localizar e gerenciar com precisão as motos 
 
 ---
 
-# 🏍️ Mottu Challenge - Gestão de Pátio e Setores
+#  Mottu Challenge - Gestão de Pátio e Setores
 
 Este projeto implementa um sistema de **gestão de pátio (Yard)**, **setores (Sector)** e **vagas (Spots)** para organização e alocação de motos.  
 O objetivo é permitir que filiais da Mottu consigam estruturar seus pátios em setores e, automaticamente, gerar as vagas disponíveis para as motos.
@@ -29,7 +29,7 @@ Essa solução trará mais agilidade, precisão e controle para a operação, re
 
 ---
 
-## 📌 Domínio
+##  Domínio
 
 - **Yard (Pátio)**  
   Representa um espaço físico de uma filial, que pode conter múltiplos setores.  
@@ -54,23 +54,9 @@ Essa solução trará mais agilidade, precisão e controle para a operação, re
 
 # 🚀 Guia de Configuração da Infraestrutura Azure
 
-Este guia explica como configurar e implantar a aplicação MottuGrid no Azure usando Azure Container Registry (ACR) e Azure Container Instances (ACI).
-
----
-
-## 📋 Pré-requisitos
-
-### 1. Obter o Projeto
-```bash
-git clone https://github.com/MottuChallenge/Devops.git
-cd /Devops
-```
-
-### 2. Instalar Ferramentas Entity Framework (para migrations)
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef --version
-```
+Este guia explica como configurar e implantar a aplicação MottuGrid no Azure usando App Service Web app, Azure Container Registry (ACR) e Azure Container Instances (ACI).
+Faremos isso usando uma pipeline que ativará assim que dispararmos um push no github criando um artefato e uma imagem docker e a subindo para o registry e assim caindo em uma pipeline de release que ira subir a imagem docker do registry para o web app. Antes de darmos um push devemos enviar uma imagem docker do mysql para o ACR e assim subirmos ela para o ACI tendo assim uma instancia do banco na nuvem.
+Apos o ACI ser criado devemos pegar o IP e configurar ele nas variaveis da pipeline de build. 
 
 ---
 
@@ -100,10 +86,6 @@ docker-compose up -d
 docker tag mysql:8.0 <Nome ACR>.azurecr.io/mysql:8.0
 docker push <Nome ACR>.azurecr.io/mysql:8.0
 
-# Marcar e enviar imagem da API
-docker tag mottu-grid:1.0 <Nome ACR>.azurecr.io/mottu-grid:1.0
-docker push <Nome ACR>.azurecr.io/mottu-grid:1.0
-```
 
 ### 3. Obter Credenciais do ACR
 ```bash
@@ -132,48 +114,50 @@ az container create --resource-group MottuGrid --file aci-mysql.yaml
 az container show --name mysql-aci --resource-group MottuGrid
 ```
 
-### 3. Configurar aci-api.yaml
-Edite o arquivo `aci-api.yaml` substituindo:
-```yaml
-# Dados do ACR (mesmo do MySQL):
-image: <Seu ACR>.azurecr.io/mottu-grid:1.0
-server: <Seu ACR>.azurecr.io
-username: <Username do ACR>
-password: <Password do ACR>
+### 3. Configurar a variavel da pipeline
+edite a variavel databaseConnectionString da pipeline
+coloque os dados do seu banco
 
 # String de conexão com IP do MySQL:
+```bash
 value: server=<IP-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
 ```
 
-### 4. Implantar Container da API
+### 4. Criar o App services
 ```bash
-az container create --resource-group MottuGrid --file aci-api.yaml
+  az appservice plan create \
+  --name MottuGridPlan \
+  --resource-group MottuGrid \
+  --sku B1 \
+  --is-linux
+```
+### 5. Criar o Web App quickstart:
+```bash
+  az webapp create \
+  --resource-group MottuGrid \
+  --plan MottuGridPlan \
+  --name MottuGridAPI \
+  --container-image-name nginx
 ```
 
-### 5. Executar Migrations do Entity Framework
-**⚠️ OBRIGATÓRIO:** Execute as migrations para criar as tabelas antes de testar a API:
-
+### 6. Configurar as variaveis do ACR no Web App:
 ```bash
-# Navegue para a pasta raiz da solution
-cd /Devops
-
-# Configure a string de conexão no appsettings.json:
-# "MySqlConnection": "server=<IP-PUBLICO-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306"
-
-# Execute as migrations
-dotnet ef database update --startup-project MottuChallenge.Api --project MottuChallenge.Infrastructure
+  az webapp config container set \
+  --name MottuGridAPI \
+  --resource-group MottuGrid \
+  --container-image-name rm559064.azurecr.io/teste \
+  --container-registry-url https://rm559064.azurecr.io \
+  --container-registry-user $(az acr credential show --name rm559064 --query "username" -o tsv) \
+  --container-registry-password $(az acr credential show --name rm559064 --query "passwords[0].value" -o tsv)
 ```
 
-> **Explicação:** Como as migrations estão no projeto `MottuChallenge.Infrastructure` mas a string de conexão está no `MottuChallenge.Api`, especificamos ambos os projetos.
 
----
 
 ## � Comandos Úteis para Troubleshooting
 ### Verificar Status dos Containers
 ```bash
 # Status dos containers
 az container show --name mysql-aci --resource-group MottuGrid
-az container show --name api-aci --resource-group MottuGrid
 
 # Listar todos os containers
 az container list --resource-group MottuGrid --output table
@@ -184,16 +168,6 @@ az container list --resource-group MottuGrid --output table
 # Logs do MySQL
 az container logs --name mysql-aci --resource-group MottuGrid
 
-# Logs da API
-az container logs --name api-aci --resource-group MottuGrid
-```
-
-### Obter URL da API
-```bash
-# Obter IP da API para acessar o Swagger
-az container show --name api-aci --resource-group MottuGrid
-# URL: http://<ip-do-api-aci>:8080/swagger/index.html
-```
 
 ### Teste de Conexão MySQL (Opcional)
 ```bash
@@ -205,11 +179,7 @@ mysql -h <IP-DO-MYSQL> -P 3306 -u user_test -p
 ## 🧪 Testando a Aplicação
 
 ### Acessar o Swagger
-1. Obtenha o IP da API:
-   ```bash
-   az container show --name api-aci --resource-group MottuGrid
-   ```
-2. Acesse: `http://<ip-do-api-aci>:8080/swagger/index.html`
+1. Acesse: `http://<ip-da-api>:8080/swagger/index.html`
 
 ### Exemplos de Requisições
 

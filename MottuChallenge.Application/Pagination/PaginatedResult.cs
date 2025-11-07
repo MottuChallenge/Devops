@@ -1,4 +1,6 @@
-﻿namespace MottuChallenge.Application.Pagination
+﻿using MottuChallenge.Application.DTOs.Response;
+
+namespace MottuChallenge.Application.Pagination
 {
     public sealed class PaginatedResult<T>
     {
@@ -7,6 +9,7 @@
         public int Page { get; }
         public int PageSize { get; }
         public int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
+        public List<HateoasLink> Links { get; set; }
 
         public bool HasPrevious => Page > 1;
 

@@ -13,6 +13,7 @@ namespace MottuChallenge.Infrastructure.Persistence
         public DbSet<Spot> Spots { get; set; }
         public DbSet<Motorcycle> Motorcycles { get; set; }
         public DbSet<Log> Logs { get; set; }
+        public DbSet<Employee> Employees { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,6 +24,7 @@ namespace MottuChallenge.Infrastructure.Persistence
             modelBuilder.ApplyConfiguration(new SpotMapping());
             modelBuilder.ApplyConfiguration(new MotorcycleMapping());
             modelBuilder.ApplyConfiguration(new LogMapping());
+            modelBuilder.ApplyConfiguration(new EmployessMapping());
         }
     }
 }

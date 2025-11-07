@@ -6,5 +6,6 @@
         public string Name { get; set; }
         public AddressResponseDto Address { get; set; }
         public List<PointResponseDto> Points { get; set; } = new();
+        public List<HateoasLink> Links { get; set; }
     }
 }
