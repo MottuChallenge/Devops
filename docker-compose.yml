@@ -10,27 +10,9 @@ services:
       MYSQL_USER: user_test
       MYSQL_PASSWORD: user_password
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mottu-grid
-    ports:
-      - "8080:8080"
-    environment:
-      DB_CONNECTION: server=mysql;uid=user_test;pwd=user_password;database=MottuGridDb;port=3307
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   mysql_data:
