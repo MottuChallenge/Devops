@@ -119,7 +119,9 @@ edite a variavel databaseConnectionString da pipeline
 coloque os dados do seu banco
 
 # String de conexão com IP do MySQL:
+```bash
 value: server=<IP-DO-MYSQL>;uid=user_test;pwd=user_password;database=MottuGridDb;port=3306
+```
 
 ### 4. Criar o App services
 ```bash
