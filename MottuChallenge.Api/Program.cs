@@ -28,17 +28,13 @@ namespace MottuChallenge.Api
             
             
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI(ui =>
-                    {
-                        ui.SwaggerEndpoint("/swagger/v1/swagger.json",  "MottuGrid.API v1");
-                        ui.SwaggerEndpoint("/swagger/v2/swagger.json",  "MottuGrid.API v2");
-                    }
-                );
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI(ui =>
+                {
+                    ui.SwaggerEndpoint("/swagger/v1/swagger.json",  "MottuGrid.API v1");
+                    ui.SwaggerEndpoint("/swagger/v2/swagger.json",  "MottuGrid.API v2");
+                }
+            );
 
             app.UseHttpsRedirection();
 
