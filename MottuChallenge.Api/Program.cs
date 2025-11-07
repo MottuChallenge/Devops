@@ -3,6 +3,7 @@ using MottuChallenge.Api.Extensions;
 using MottuChallenge.Application;
 using MottuChallenge.Application.Configurations;
 using MottuChallenge.Infrastructure;
+using MottuChallenge.Infrastructure.Persistence;
 
 namespace MottuChallenge.Api
 {
@@ -22,6 +23,8 @@ namespace MottuChallenge.Api
             builder.Services.AddVersioning();
 
             var app = builder.Build();
+
+            DatabaseInitializer.ApplyMigrations(app.Services);
             
             app.UseAuthentication();
             app.UseAuthorization();
