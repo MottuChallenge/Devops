@@ -72,7 +72,7 @@ az acr create \
     --sku Basic \
     --admin-enabled true
 ```
-> **Nota:** Substitua `<Nome ACR>` por um nome único globalmente
+> **Nota:** Substitua `<Nome ACR>` por um nome único globalmente.
 
 ### 2. Construir e Enviar Imagens
 ```bash
